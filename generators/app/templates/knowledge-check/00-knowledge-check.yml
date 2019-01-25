@@ -1,14 +1,25 @@
-  - content: <%= question1Text %>
+### YamlMime:ModuleUnit
+uid: learn.<%= moduleUid %>.<%= unitNumber %>-knowledge-check
+title: Knowledge Check
+metadata:
+  title: Check your knowledge
+  description: "Review what you've learned"
+  ms.date: <%= unitPublishDate %>
+  author: <%= authorGitHubId %>
+  ms.author: <%= authorMicrosoftId %>
+  ms.topic: interactive-tutorial
+  ms.prod: <%= msProdValue %>
+  ROBOTS: NOINDEX
+durationInMinutes: 3
+quiz:
+  title: Check your knowledge
+  questions:
+  <%_ knowledgeCheckQuestions.forEach(function (question) { -%>
+  - content: <%= question.content %>
     choices:
-    - content: "<%= question1Value1 %>"
-      isCorrect: <%= question1Correct1 %>
-      incorrectExplanation: "<%= question1Value1Explanation %>"
-    - content: "<%= question1Value2 %>"
-      isCorrect: <%= question1Correct2 %>
-      correctExplanation: "<%= question1Value2Explanation %>"
-    - content: "<%= question1Value3 %>"
-      isCorrect: <%= question1Correct3 %>
-      incorrectExplanation: "<%= question1Value3Explanation %>"
-    - content: "<%= question1Value4 %>"
-      isCorrect: <%= question1Correct4 %>
-      incorrectExplanation: "<%= question1Value4Explanation %>"
+    <%_ question.answers.forEach(function (answer) { _%>
+    - content: "<%= answer.content %>"
+      isCorrect: <%= answer.isCorrect %>
+      explanation: "<%= answer.explanation %>"
+    <%_ }); _%>
+  <%_ }); -%>

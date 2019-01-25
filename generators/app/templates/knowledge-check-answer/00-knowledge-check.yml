@@ -1,3 +1,0 @@
-    - content: "<%= answerValue %>"
-      isCorrect: <%= answerIsCorrect %>
-      incorrectExplanation: "<%= answerIncorrectExplanation %>"
