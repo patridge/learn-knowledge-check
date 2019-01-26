@@ -10,11 +10,15 @@ module.exports = class extends Generator {
     constructor(args, opts) {
         super(args, opts);
 
-        this.option('title', { type: String });
-        this.option('unitPublishDate', {type: String });
-        this.option('authorGitHubId', {type: String });
-        this.option('authorMicrosoftId', {type: String });
-        // TODO: Put other parameters in place here.
+        this.argument('moduleUid', { type: String, required: false });
+        // Not using Number for unitNumber since it didn't play well with debug arguments being strings.
+        this.argument('unitNumber', { type: String, required: false });
+        this.argument('unitPublishDate', { type: String, required: false });
+        this.argument('authorGitHubId', { type: String, required: false });
+        this.argument('authorMicrosoftId', { type: String, required: false });
+        this.argument('msProdValue', { type: String, required: false });
+        // TODO: Maybe make custom type parser for msProdValue that is then used in the prompt (https://yeoman.io/authoring/user-interactions.html#arguments).
+        // TODO: Put question parameters in place here. (Might not be straightforward with arbitrary question and answer counts.)
 
         this.outputConfig = {};
         this.convertToId = helper.convertToId;
@@ -23,11 +27,6 @@ module.exports = class extends Generator {
     initializing() {
         // Welcome
         this.log(yosay('Welcome to the Microsoft Learn knowledge check generator!'));
-
-        // Configure anything early (e.g., environment values)
-        // Example taken from VS Code extension generator:
-        // let outputConfig = this.outputConfig;
-        // return env.getLatestVSCodeVersion().then(version => { outputConfig.vsCodeEngine = version; });
     }
 
     prompting() {
@@ -54,7 +53,7 @@ module.exports = class extends Generator {
                 let unitNumber = generator.options['unitNumber'];
                 if (unitNumber && validator.validateNonEmpty(unitNumber)) {
                     // Provided via argument. No need to prompt.
-                    generator.outputConfig.unitIndex = unitNumber;
+                    generator.outputConfig.unitNumber = unitNumber;
                     return Promise.resolve();
                 }
 
@@ -140,40 +139,51 @@ module.exports = class extends Generator {
                 });
             },
             askForMicrosoftProductValue: () => {
+                const values = [
+                    // Pulled from https://review.docs.microsoft.com/en-us/new-hope/information-architecture/metadata/taxonomies?branch=master#learn-product
+                    // Via jQuery call: `$("#product").next().next().find("tr").filter(function (i, e) { return $(e).find("td:last").text() === "1"; }).find("td:first").map(function () { return "{\n\tvalue: \"" + $(this).text() + "\"\n},\n"; }).get().join("")`
+                    // FUTURE: Pull from an up-to-date list directly.
+                    // TODO: Determine if name is required or if it can be inferred from value.
+                    {
+                        value: "learning-dotnet"
+                    },
+                    {
+                        value: "learning-azure"
+                    },
+                    {
+                        value: "learning-dynamics"
+                    },
+                    {
+                        value: "learning-office"
+                    },
+                    {
+                        value: "learning-power-platform"
+                    },
+                    {
+                        value: "learning-skype"
+                    },
+                    {
+                        value: "learning-vs"
+                    },
+                    {
+                        value: "learning-windows"
+                    },
+                ];
+                const cliValue = generator.options['msProdValue'];
+                if (cliValue) {
+                    const matchedValue = values.filter((value) => value.value.toLowerCase() === cliValue.toLowerCase());
+                    if (matchedValue.length >= 1) {
+                        // Provided via argument. No need to prompt.
+                        generator.outputConfig.msProdValue = matchedValue[0];
+                        return Promise.resolve();
+                    }
+                }
+
                 return generator.prompt({
                     type: 'list',
                     name: 'msProdValue',
                     message: 'Select a Microsoft Product value:',
-                    choices: [
-                        // Pulled from https://review.docs.microsoft.com/en-us/new-hope/information-architecture/metadata/taxonomies?branch=master#learn-product
-                        // Via jQuery call: `$("#product").next().next().find("tr").filter(function (i, e) { return $(e).find("td:last").text() === "1"; }).find("td:first").map(function () { return "{\n\tvalue: \"" + $(this).text() + "\"\n},\n"; }).get().join("")`
-                        // FUTURE: Pull from an up-to-date list directly.
-                        // TODO: Determine if name is required or if it can be inferred from value.
-                        {
-                            value: "learning-dotnet"
-                        },
-                        {
-                            value: "learning-azure"
-                        },
-                        {
-                            value: "learning-dynamics"
-                        },
-                        {
-                            value: "learning-office"
-                        },
-                        {
-                            value: "learning-power-platform"
-                        },
-                        {
-                            value: "learning-skype"
-                        },
-                        {
-                            value: "learning-vs"
-                        },
-                        {
-                            value: "learning-windows"
-                        }
-                    ]
+                    choices: values,
                 }).then(answers => {
                     generator.outputConfig.msProdValue = answers.msProdValue;
                 });
@@ -252,7 +262,7 @@ module.exports = class extends Generator {
                         });
                     }
                 });
-            }//,
+            },
         };
 
         // Ask prompt system borrowed from VS Code extension generator.
