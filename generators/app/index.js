@@ -187,91 +187,81 @@ module.exports = class extends Generator {
                     generator.outputConfig.msProdValue = answers.msProdValue;
                 });
             },
-            askForQuestionCount: () => {
+            askForQuestions: () => {
                 return generator.prompt({
                     type: 'input',
                     name: 'knowledgeCheckQuestionCount',
                     message: 'How many questions:',
                     validate: validator.validateNonEmpty
-                }).then(answers => {
+                }).then(async answers => {
                     generator.outputConfig.knowledgeCheckQuestionCount = answers.knowledgeCheckQuestionCount;
                     generator.outputConfig.knowledgeCheckQuestions = [];
+
+                    for (let questionIndex = 0; questionIndex < generator.outputConfig.knowledgeCheckQuestionCount; questionIndex += 1) {
+                        const questionNumber = questionIndex + 1;
+                        await generator.prompt([
+                            { // Ask for question text
+                                type: 'input',
+                                name: 'questionContent',
+                                message: '  Question ' + questionNumber + ' text:',
+                                validate: validator.validateNonEmpty,
+                            },
+                            { // Ask how many answers
+                                type: 'input',
+                                name: 'questionAnswerCount',
+                                message: '  Question ' + questionNumber + ' answer count:',
+                                validate: validator.validateNonEmpty,
+                            },
+                        ]).then(async initialQuestionAnswers => {
+                            // Pre-push questions into config before asking for values next
+                            generator.outputConfig.knowledgeCheckQuestions.push({
+                                questionIndex: questionIndex,
+                                content: initialQuestionAnswers.questionContent,
+                                answers: [],
+                            });
+        
+                            for (let answerIndex = 0; answerIndex < initialQuestionAnswers.questionAnswerCount; answerIndex += 1) {
+                                const answerNumber = answerIndex + 1;
+                                await generator.prompt([
+                                    {
+                                        type: 'input',
+                                        name: 'answerContent',
+                                        message: '    Answer ' + answerNumber + ' text:',
+                                        validate: validator.validateNonEmpty
+                                    },
+                                    {
+                                        type: 'list',
+                                        name: 'answerIsCorrect',
+                                        message: '    Answer ' + answerNumber + ' is correct ("true" or "false")?:',
+                                        validate: validator.validateBool,
+                                        choices: [
+                                            {
+                                                value: "true"
+                                            },
+                                            {
+                                                value: "false"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'input',
+                                        name: 'answerExplanation',
+                                        message: '    Answer ' + answerNumber + ' explanation?:',
+                                        validate: validator.validateNonEmpty
+                                    },
+                                ]).then(answerDetails => {
+                                    const question = generator.outputConfig.knowledgeCheckQuestions[questionIndex];
+                                    question.answers.push({
+                                        content: answerDetails.answerContent,
+                                        isCorrect: answerDetails.answerIsCorrect,
+                                        explanation: answerDetails.answerExplanation
+                                    });
+                                });
+                            }
+                        });
+                    }
                 });
             }//,
-            // askForQuestionDetails: () => {
-            //     // CURRENT TODO: Failing because prompt system expects these to be a prompt and instead we are prompting directly here
-            //     // Possibly map out all prompts with unique answer properties to iterate through later.
-            //     var questionPrompts = Array.apply(null, { length: generator.outputConfig.knowledgeCheckQuestionCount }).map((_, i) => i)
-            //     .forEach((_, i) => {
-            //         var questionIndex = i;
-            //         var questionNumber = i + 1;
-            //         return generator.prompt([
-            //             { // Ask for question text
-            //                 type: 'input',
-            //                 name: 'questionContent',
-            //                 message: 'Question ' + questionNumber + ' text:',
-            //                 validate: validator.validateNonEmpty
-            //             },
-            //             { // Ask how many answers
-            //                 type: 'input',
-            //                 name: 'questionAnswerCount',
-            //                 message: 'Question ' + questionNumber + ' answer count:',
-            //                 validate: validator.validateNonEmpty
-            //             }
-            //         ]).then(initialQuestionDetails => {
-            //             // Pre-push questions into config before asking for values next
-            //             generator.outputConfig.knowledgeCheckQuestions.push({
-            //                 questionIndex: questionIndex,
-            //                 content: initialQuestionDetails.questionContent,
-            //                 answers: []
-            //             });
-            //             var answerPrompts = Array.apply(null, { length: initialQuestionDetails.questionAnswerCount }).map((_, i) => i)
-            //             .map((val, answerIndex) => {
-            //                 return [
-            //                     {
-            //                         type: 'input',
-            //                         name: 'answerContent',
-            //                         message: 'Answer ' + answerIndex + ' text:',
-            //                         validate: validator.validateNonEmpty
-            //                     },
-            //                     {
-            //                         type: 'list',
-            //                         name: 'answerIsCorrect',
-            //                         message: 'Answer ' + answerIndex + ' is correct ("true" or "false")?:',
-            //                         validate: validator.validateBool,
-            //                         choices: [
-            //                             {
-            //                                 value: "true"
-            //                             },
-            //                             {
-            //                                 value: "false"
-            //                             }
-            //                         ]
-            //                     },
-            //                     {
-            //                         type: 'input',
-            //                         name: 'answerExplanation',
-            //                         message: 'Answer ' + answerIndex + ' explanation?:',
-            //                         validate: validator.validateNonEmpty
-            //                     },
-            //                 ];
-            //             });
-            //             return generator.prompt(answerPrompts)
-            //             .then(answerDetails => {
-            //                 var question = generator.outputConfig.knowledgeCheckQuestions[questionIndex];
-            //                 question.answers.push({
-            //                     content: answerDetails.answerContent,
-            //                     isCorrect: answerDetails.answerIsCorrect,
-            //                     explanation: answerDetails.answerExplanation
-            //                 });
-            //             });
-            //         });
-            //     });
-            //     // return generator.prompt(questionPrompts)
-            //     // .then(answers => {
-            //     //     generator.outputConfig.knowledgeCheckQuestions = answers;
-            //     // });
-            // }//,
         };
 
         // Ask prompt system borrowed from VS Code extension generator.
@@ -285,73 +275,6 @@ module.exports = class extends Generator {
                 });
             })
         }
-        result = result.then(async _ => {
-            // HACK: Since this was written to use prompts directly, it's tacked on to the end of the existing prompt system for now.
-            // TODO: Put this into the prompt system above at some point.
-            for (let questionIndex = 0; questionIndex < generator.outputConfig.knowledgeCheckQuestionCount; questionIndex += 1) {
-                const questionNumber = questionIndex + 1;
-                await generator.prompt([
-                    { // Ask for question text
-                        type: 'input',
-                        name: 'questionContent',
-                        message: '  Question ' + questionNumber + ' text:',
-                        validate: validator.validateNonEmpty,
-                    },
-                    { // Ask how many answers
-                        type: 'input',
-                        name: 'questionAnswerCount',
-                        message: '  Question ' + questionNumber + ' answer count:',
-                        validate: validator.validateNonEmpty,
-                    },
-                ]).then(async initialQuestionAnswers => {
-                    // Pre-push questions into config before asking for values next
-                    generator.outputConfig.knowledgeCheckQuestions.push({
-                        questionIndex: questionIndex,
-                        content: initialQuestionAnswers.questionContent,
-                        answers: [],
-                    });
-
-                    for (let answerIndex = 0; answerIndex < initialQuestionAnswers.questionAnswerCount; answerIndex += 1) {
-                        const answerNumber = answerIndex + 1;
-                        await generator.prompt([
-                            {
-                                type: 'input',
-                                name: 'answerContent',
-                                message: '    Answer ' + answerNumber + ' text:',
-                                validate: validator.validateNonEmpty
-                            },
-                            {
-                                type: 'list',
-                                name: 'answerIsCorrect',
-                                message: '    Answer ' + answerNumber + ' is correct ("true" or "false")?:',
-                                validate: validator.validateBool,
-                                choices: [
-                                    {
-                                        value: "true"
-                                    },
-                                    {
-                                        value: "false"
-                                    }
-                                ]
-                            },
-                            {
-                                type: 'input',
-                                name: 'answerExplanation',
-                                message: '    Answer ' + answerNumber + ' explanation?:',
-                                validate: validator.validateNonEmpty
-                            },
-                        ]).then(answerDetails => {
-                            const question = generator.outputConfig.knowledgeCheckQuestions[questionIndex];
-                            question.answers.push({
-                                content: answerDetails.answerContent,
-                                isCorrect: answerDetails.answerIsCorrect,
-                                explanation: answerDetails.answerExplanation
-                            });
-                        });
-                    }
-                });
-            }
-        });
         return result;
     }
 
