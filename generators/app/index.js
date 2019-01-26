@@ -1,8 +1,8 @@
 'use strict';
 
 let Generator = require('yeoman-generator');
-let _ = require('lodash');
 let validator = require('./validator');
+let helper = require('./helper');
 let yosay = require('yosay');
 let path = require('path');
 
@@ -16,17 +16,8 @@ module.exports = class extends Generator {
         this.option('authorMicrosoftId', {type: String });
         // TODO: Put other parameters in place here.
 
-        this.outputConfig = Object.create(null);
-        /**
-         *
-         * @param {name} string
-         */
-        this.convertToId = function (name) {
-            // 1. Strip out characters that probably shouldn't be in a filename.
-            // 2. Make it lowercase.
-            // 3. Replace spaces with hyphens.
-            return name.replace(/[`~!@#$%^&*()_=+\[\]{}\\|;:"',.<>/?]/g, "").toLowerCase().replace(/ /g, '-');
-        };
+        this.outputConfig = {};
+        this.convertToId = helper.convertToId;
     }
 
     initializing() {
