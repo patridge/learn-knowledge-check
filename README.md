@@ -1,3 +1,5 @@
+This repo is no longer being maintained. This generator has been deprecated in favor of [integrating this template into the multi-template system of the greater learn-module-generator Yeoman system](https://github.com/patridge/learn-module-generator#generate-a-module-knowledge-check).
+
 # yo learn-knowledge-check - Microsoft Learn knowledge check generator
 
 A Yeoman generator to create a knowledge check for Microsoft Learn modules.
